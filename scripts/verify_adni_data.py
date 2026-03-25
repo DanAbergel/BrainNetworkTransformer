@@ -11,7 +11,8 @@ import json
 DATA_ROOT = "/sci/nosnap/arieljaffe/sagi.nathan/shared_fmri_data"
 
 # --- Tensor ---
-pt_path = f"{DATA_ROOT}/adni_parcellated_schaefer200.pt"
+LAB_DIR = "/sci/labs/arieljaffe/dan.abergel1"
+pt_path = f"{LAB_DIR}/data/adni_parcellated_schaefer200.pt"
 t = torch.load(pt_path, weights_only=True)
 print(f"Tensor shape: {t.shape}, dtype: {t.dtype}, NaN count: {t.isnan().sum().item()}")
 

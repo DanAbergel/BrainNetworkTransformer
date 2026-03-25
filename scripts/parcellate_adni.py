@@ -18,7 +18,8 @@ from nilearn.image import resample_img
 from pathlib import Path
 
 DATA_ROOT = Path("/sci/nosnap/arieljaffe/sagi.nathan/shared_fmri_data")
-OUTPUT_PATH = DATA_ROOT / "adni_parcellated_schaefer200.pt"
+LAB_DIR = Path("/sci/labs/arieljaffe/dan.abergel1")
+OUTPUT_PATH = LAB_DIR / "data" / "adni_parcellated_schaefer200.pt"
 
 
 def main():
@@ -77,6 +78,7 @@ def main():
             result[i, :, j] = voxels.mean(dim=0)
 
     # 6. Save
+    OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     torch.save(result, OUTPUT_PATH)
     print(f"\nSaved: {OUTPUT_PATH}")
     print(f"Shape: {result.shape}  (N={N}, T={T}, R={len(masks)})")
