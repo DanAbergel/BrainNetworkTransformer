@@ -32,10 +32,7 @@ export XDG_CACHE_HOME="$LAB_DIR/cache"
 export WANDB_MODE=disabled
 mkdir -p "$TMPDIR" "$PIP_CACHE_DIR" "$PROJECT_DIR/logs"
 
-LABEL=${1:-Sex_Binary}
-
 echo "BNT ADNI Training — Job $SLURM_JOB_ID on $(hostname)"
-echo "Label: $LABEL"
 echo "GPU: $(nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null || echo 'N/A')"
 
 source "$VENV_DIR/bin/activate"
@@ -43,13 +40,19 @@ cd "$PROJECT_DIR"
 
 pip install --quiet hydra-core omegaconf wandb scikit-learn
 
-python -m source \
-    dataset=ADNI \
-    model=bnt \
-    dataset.label_column=$LABEL \
-    repeat_time=5 \
-    preprocess=mixup \
-    datasz=100p \
-    2>&1 | tee "logs/bnt_adni_${LABEL}_${SLURM_JOB_ID}.log"
+for LABEL in Sex_Binary CDR_Binary degradation_binary_1year degradation_binary_3years; do
+    echo ""
+    echo "=========================================="
+    echo "  Label: $LABEL"
+    echo "=========================================="
+    python -m source \
+        dataset=ADNI \
+        model=bnt \
+        dataset.label_column=$LABEL \
+        repeat_time=5 \
+        preprocess=mixup \
+        datasz=100p \
+        2>&1 | tee "logs/bnt_adni_${LABEL}_${SLURM_JOB_ID}.log"
+done
 
 echo "Done: $(date)"
