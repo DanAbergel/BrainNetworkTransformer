@@ -14,8 +14,7 @@
 # =====================================================================
 
 #SBATCH --job-name=bnt-adni
-#SBATCH --partition=gpu
-#SBATCH --gres=gpu:1
+#SBATCH --gres=gpu:1:l40s
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=32G
 #SBATCH --time=03:00:00
