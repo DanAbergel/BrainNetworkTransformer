@@ -11,12 +11,12 @@ import json
 DATA_ROOT = "/sci/nosnap/arieljaffe/sagi.nathan/shared_fmri_data"
 
 # --- Tensor ---
-pt_path = f"{DATA_ROOT}/time_regions_tensor_not_normalized_schaefer.pt"
+pt_path = f"{DATA_ROOT}/adni_parcellated_schaefer200.pt"
 t = torch.load(pt_path, weights_only=True)
 print(f"Tensor shape: {t.shape}, dtype: {t.dtype}, NaN count: {t.isnan().sum().item()}")
 
 # --- Labels ---
-with open(f"{DATA_ROOT}/index_to_name_old.json") as f:
+with open(f"{DATA_ROOT}/index_to_name.json") as f:
     idx = json.load(f)
 with open(f"{DATA_ROOT}/imageID_to_labels.json") as f:
     lab = json.load(f)
