@@ -45,7 +45,7 @@ pip install --quiet hydra-core omegaconf wandb scikit-learn
 
 python -m source \
     dataset=ADNI \
-    model=bnt_adni \
+    model=bnt \
     dataset.label_column=$LABEL \
     repeat_time=5 \
     preprocess=mixup \
