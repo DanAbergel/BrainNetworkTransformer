@@ -10,6 +10,7 @@ Usage:
     python3 scripts/parcellate_adni.py
 """
 
+import os
 import torch
 import numpy as np
 import nibabel as nib
@@ -19,6 +20,9 @@ from pathlib import Path
 
 DATA_ROOT = Path("/sci/nosnap/arieljaffe/sagi.nathan/shared_fmri_data")
 LAB_DIR = Path("/sci/labs/arieljaffe/dan.abergel1")
+
+# Redirect nilearn cache to lab dir (home has no space)
+os.environ["NILEARN_DATA"] = str(LAB_DIR / "cache" / "nilearn_data")
 OUTPUT_PATH = LAB_DIR / "data" / "adni_parcellated_schaefer200.pt"
 
 
