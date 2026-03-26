@@ -161,6 +161,7 @@ class Train:
                 f'Val AUC:{val_result[0]:.4f}',
                 f'Test AUC:{test_result[0]:.4f}',
                 f'Test Sen:{test_result[-1]:.4f}',
+                f'Test F1:{test_result[-4]:.4f}',
                 f'LR:{self.lr_schedulers[0].lr:.4f}'
             ]))
 
