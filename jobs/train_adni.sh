@@ -51,6 +51,7 @@ python -m source \
     repeat_time=5 \
     preprocess=mixup \
     datasz=100p \
+    log_path=result/$LABEL \
     2>&1 | tee "logs/bnt_adni_${LABEL}_${SLURM_JOB_ID}.log"
 
 echo "Done: $(date)"
