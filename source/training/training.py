@@ -156,9 +156,9 @@ class Train:
             # result format: [auc, precision, recall, f1, support, specificity, sensitivity]
             self.logger.info(" | ".join([
                 f'Epoch[{epoch}/{self.epochs}]',
-                f'Train Acc:{self.train_accuracy.avg:.3f}% AUC:{train_result[0]:.4f} P:{train_result[-6]:.4f} R:{train_result[-5]:.4f} F1:{train_result[-4]:.4f}',
-                f'Val Acc:{self.val_accuracy.avg:.3f}% AUC:{val_result[0]:.4f} P:{val_result[-6]:.4f} R:{val_result[-5]:.4f} F1:{val_result[-4]:.4f}',
-                f'Test Acc:{self.test_accuracy.avg:.3f}% AUC:{test_result[0]:.4f} P:{test_result[-6]:.4f} R:{test_result[-5]:.4f} F1:{test_result[-4]:.4f}',
+                f'Train Acc:{self.train_accuracy.avg:.3f}% P:{train_result[-6]:.4f} R:{train_result[-5]:.4f} F1:{train_result[-4]:.4f}',
+                f'Val Acc:{self.val_accuracy.avg:.3f}% P:{val_result[-6]:.4f} R:{val_result[-5]:.4f} F1:{val_result[-4]:.4f}',
+                f'Test Acc:{self.test_accuracy.avg:.3f}% P:{test_result[-6]:.4f} R:{test_result[-5]:.4f} F1:{test_result[-4]:.4f}',
                 f'LR:{self.lr_schedulers[0].lr:.4f}'
             ]))
 
