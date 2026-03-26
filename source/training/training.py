@@ -103,7 +103,7 @@ class Train:
         result[result > 0.5] = 1
         result[result <= 0.5] = 0
         metric = precision_recall_fscore_support(
-            labels, result, average='micro')
+            labels, result, average='macro')
 
         report = classification_report(
             labels, result, output_dict=True, zero_division=0)
