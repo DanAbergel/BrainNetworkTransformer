@@ -1,9 +1,9 @@
 """
 Summarize BNT ADNI training results from log files.
 
-Each .out file contains 5 runs for the same label. This script parses
-the last epoch of EACH run (detected by "ADNI loaded" separator lines)
-and computes mean ± std across all 5 runs.
+Each .out file contains 5 runs for the same label. Runs are detected
+by Epoch[0/200] lines (start of each run). The last epoch of each run
+is used for metrics. Reports mean ± std across runs.
 
 Usage:
     python3 scripts/summarize_results.py logs/train_adni_*.out
@@ -16,36 +16,27 @@ import numpy as np
 
 
 def parse_runs(filepath):
-    """Parse all runs from a single log file.
-
-    Returns: (label, list of metric dicts — one per run)
-    """
+    """Parse all runs from a single log file."""
     label = None
     runs = []
     current_last_epoch = None
 
     with open(filepath) as f:
         for line in f:
-            # Detect label
             if "Label:" in line:
                 m = re.search(r'Label:\s*(\S+)', line)
                 if m:
                     label = m.group(1)
 
-            # Track last epoch line
             if "Epoch[" in line:
+                # Detect start of a new run (Epoch[0/...)
+                if "Epoch[0/" in line and current_last_epoch is not None:
+                    metrics = parse_epoch_line(current_last_epoch)
+                    if metrics:
+                        runs.append(metrics)
                 current_last_epoch = line
 
-            # "ADNI loaded" marks the start of a new run
-            # so the previous last_epoch belongs to the previous run
-            if "ADNI loaded" in line and current_last_epoch is not None:
-                metrics = parse_epoch_line(current_last_epoch)
-                if metrics:
-                    runs.append(metrics)
-                current_last_epoch = None
-
-    # If file ends without "ADNI loaded" after last run (shouldn't happen
-    # but handle it), capture the last epoch
+    # Capture the last run
     if current_last_epoch is not None:
         metrics = parse_epoch_line(current_last_epoch)
         if metrics:
@@ -71,10 +62,10 @@ def parse_epoch_line(line):
 def fmt(vals):
     """Format mean ± std."""
     if len(vals) > 1:
-        return f"{np.mean(vals):>7.4f} ± {np.std(vals):.4f}"
+        return f"{np.mean(vals):.4f} ± {np.std(vals):.4f}"
     elif len(vals) == 1:
-        return f"{vals[0]:>7.4f}          "
-    return f"{'N/A':>18}"
+        return f"{vals[0]:.4f}"
+    return "N/A"
 
 
 def main():
@@ -82,7 +73,6 @@ def main():
         print("Usage: python3 scripts/summarize_results.py logs/train_adni_*.out")
         sys.exit(1)
 
-    # Collect: label -> list of metric dicts across all files
     results = defaultdict(list)
     for filepath in sys.argv[1:]:
         label, runs = parse_runs(filepath)
@@ -96,19 +86,18 @@ def main():
     splits = ['Train', 'Val', 'Test']
     metrics = ['Accuracy', 'Precision', 'Recall', 'F1']
 
-    print("=" * 110)
+    print("=" * 100)
     print("BNT on ADNI — Results Summary (mean ± std over 5 runs)")
-    print("=" * 110)
+    print("=" * 100)
 
     for label in sorted(results.keys()):
         runs = results[label]
-        print(f"\n{'─' * 110}")
-        print(f"  {label}  ({len(runs)} runs)")
-        print(f"{'─' * 110}")
+        print(f"\n  {label}  ({len(runs)} runs)")
+        print(f"  {'-' * 96}")
 
         header = f"  {'':>10}"
         for m in metrics:
-            header += f"  {m:>22}"
+            header += f"  {m:>20}"
         print(header)
 
         for split in splits:
@@ -116,10 +105,10 @@ def main():
             for m in metrics:
                 key = f'{split}_{m}'
                 vals = [r[key] for r in runs if key in r]
-                row += f"  {fmt(vals):>22}"
+                row += f"  {fmt(vals):>20}"
             print(row)
 
-    print(f"\n{'=' * 110}")
+    print(f"\n{'=' * 100}")
 
 
 if __name__ == "__main__":
