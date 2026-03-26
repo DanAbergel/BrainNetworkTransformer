@@ -146,52 +146,52 @@ class Train:
         for epoch in range(self.epochs):
             self.reset_meters()
             self.train_per_epoch(self.optimizers[0], self.lr_schedulers[0])
-            train_result = self.test_per_epoch(self.train_dataloader,
-                                               self.train_loss, self.train_accuracy)
             val_result = self.test_per_epoch(self.val_dataloader,
                                              self.val_loss, self.val_accuracy)
+
             test_result = self.test_per_epoch(self.test_dataloader,
                                               self.test_loss, self.test_accuracy)
 
-            # result format: [auc, precision, recall, f1, support, specificity, sensitivity]
             self.logger.info(" | ".join([
                 f'Epoch[{epoch}/{self.epochs}]',
-                f'Train Acc:{self.train_accuracy.avg:.3f}% P:{train_result[-6]:.4f} R:{train_result[-5]:.4f} F1:{train_result[-4]:.4f}',
-                f'Val Acc:{self.val_accuracy.avg:.3f}% P:{val_result[-6]:.4f} R:{val_result[-5]:.4f} F1:{val_result[-4]:.4f}',
-                f'Test Acc:{self.test_accuracy.avg:.3f}% P:{test_result[-6]:.4f} R:{test_result[-5]:.4f} F1:{test_result[-4]:.4f}',
+                f'Train Loss:{self.train_loss.avg: .3f}',
+                f'Train Accuracy:{self.train_accuracy.avg: .3f}%',
+                f'Test Loss:{self.test_loss.avg: .3f}',
+                f'Test Accuracy:{self.test_accuracy.avg: .3f}%',
+                f'Val AUC:{val_result[0]:.4f}',
+                f'Test AUC:{test_result[0]:.4f}',
+                f'Test Sen:{test_result[-1]:.4f}',
                 f'LR:{self.lr_schedulers[0].lr:.4f}'
             ]))
 
             wandb.log({
                 "Train Loss": self.train_loss.avg,
                 "Train Accuracy": self.train_accuracy.avg,
-                "Train AUC": train_result[0],
-                "Val AUC": val_result[0],
                 "Test Loss": self.test_loss.avg,
                 "Test Accuracy": self.test_accuracy.avg,
+                "Val AUC": val_result[0],
                 "Test AUC": test_result[0],
-                'Test F1': test_result[-4],
-                'Test Precision': test_result[-6],
-                'Test Recall': test_result[-5],
+                'Test Sensitivity': test_result[-1],
+                'Test Specificity': test_result[-2],
+                'micro F1': test_result[-4],
+                'micro recall': test_result[-5],
+                'micro precision': test_result[-6],
             })
 
             training_process.append({
                 "Epoch": epoch,
+                "Train Loss": self.train_loss.avg,
                 "Train Accuracy": self.train_accuracy.avg,
-                "Train AUC": train_result[0],
-                "Train Precision": train_result[-6],
-                "Train Recall": train_result[-5],
-                "Train F1": train_result[-4],
-                "Val Accuracy": self.val_accuracy.avg,
-                "Val AUC": val_result[0],
-                "Val Precision": val_result[-6],
-                "Val Recall": val_result[-5],
-                "Val F1": val_result[-4],
+                "Test Loss": self.test_loss.avg,
                 "Test Accuracy": self.test_accuracy.avg,
                 "Test AUC": test_result[0],
-                "Test Precision": test_result[-6],
-                "Test Recall": test_result[-5],
-                "Test F1": test_result[-4],
+                'Test Sensitivity': test_result[-1],
+                'Test Specificity': test_result[-2],
+                'micro F1': test_result[-4],
+                'micro recall': test_result[-5],
+                'micro precision': test_result[-6],
+                "Val AUC": val_result[0],
+                "Val Loss": self.val_loss.avg,
             })
 
         if self.save_learnable_graph:

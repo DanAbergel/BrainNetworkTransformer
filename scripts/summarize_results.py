@@ -1,9 +1,15 @@
 """
 Summarize BNT ADNI training results from log files.
 
-Each .out file contains 5 runs for the same label. Runs are detected
-by Epoch[0/200] lines (start of each run). The last epoch of each run
-is used for metrics. Reports mean ± std across runs.
+Parses the original log format (no code changes to training.py).
+Extracts val/test metrics from the last epoch of each of 5 runs.
+
+Original log format:
+  Epoch[199/200] | Train Loss:... | Train Accuracy:...% | Test Loss:... |
+  Test Accuracy:...% | Val AUC:... | Test AUC:... | Test Sen:... | LR:...
+
+Metrics available in logs: Test Accuracy, Val AUC, Test AUC, Test Sensitivity
+Additional metrics (precision, recall, F1) saved in training_process.npy
 
 Usage:
     python3 scripts/summarize_results.py logs/train_adni_*.out
@@ -11,12 +17,18 @@ Usage:
 
 import re
 import sys
+import glob
 from collections import defaultdict
 import numpy as np
+from pathlib import Path
 
 
-def parse_runs(filepath):
-    """Parse all runs from a single log file."""
+def parse_runs_from_log(filepath):
+    """Parse all 5 runs from a single .out file using original log format.
+
+    Detects run boundaries via Epoch[0/ lines.
+    Returns: (label, list of metric dicts)
+    """
     label = None
     runs = []
     current_last_epoch = None
@@ -29,34 +41,58 @@ def parse_runs(filepath):
                     label = m.group(1)
 
             if "Epoch[" in line:
-                # Detect start of a new run (Epoch[0/...)
                 if "Epoch[0/" in line and current_last_epoch is not None:
-                    metrics = parse_epoch_line(current_last_epoch)
+                    metrics = parse_original_epoch(current_last_epoch)
                     if metrics:
                         runs.append(metrics)
                 current_last_epoch = line
 
-    # Capture the last run
+    # Capture last run
     if current_last_epoch is not None:
-        metrics = parse_epoch_line(current_last_epoch)
+        metrics = parse_original_epoch(current_last_epoch)
         if metrics:
             runs.append(metrics)
 
     return label, runs
 
 
-def parse_epoch_line(line):
-    """Extract metrics from an epoch log line."""
+def parse_original_epoch(line):
+    """Extract metrics from the original epoch log format."""
     metrics = {}
-    for split in ['Train', 'Val', 'Test']:
-        pattern = rf'{split} Acc:([\d.]+)% P:([\d.]+) R:([\d.]+) F1:([\d.]+)'
-        m = re.search(pattern, line)
-        if m:
-            metrics[f'{split}_Accuracy'] = float(m.group(1))
-            metrics[f'{split}_Precision'] = float(m.group(2))
-            metrics[f'{split}_Recall'] = float(m.group(3))
-            metrics[f'{split}_F1'] = float(m.group(4))
+
+    m = re.search(r'Test Accuracy:\s*([\d.]+)%', line)
+    if m:
+        metrics['Test_Accuracy'] = float(m.group(1))
+
+    m = re.search(r'Val AUC:([\d.]+)', line)
+    if m:
+        metrics['Val_AUC'] = float(m.group(1))
+
+    m = re.search(r'Test AUC:([\d.]+)', line)
+    if m:
+        metrics['Test_AUC'] = float(m.group(1))
+
+    m = re.search(r'Test Sen:([\d.]+)', line)
+    if m:
+        metrics['Test_Sensitivity'] = float(m.group(1))
+
     return metrics if metrics else None
+
+
+def load_npy_results(result_dir):
+    """Load training_process.npy files from result/ directory.
+
+    Each run saves to result/<unique_id>/training_process.npy.
+    Returns list of metric dicts (last epoch of each run).
+    """
+    runs = []
+    npy_files = sorted(Path(result_dir).glob("*/training_process.npy"))
+    for npy_path in npy_files:
+        data = np.load(npy_path, allow_pickle=True)
+        if len(data) > 0:
+            last = data[-1]  # last epoch
+            runs.append(last)
+    return runs
 
 
 def fmt(vals):
@@ -75,7 +111,7 @@ def main():
 
     results = defaultdict(list)
     for filepath in sys.argv[1:]:
-        label, runs = parse_runs(filepath)
+        label, runs = parse_runs_from_log(filepath)
         if label and runs:
             results[label].extend(runs)
 
@@ -83,30 +119,31 @@ def main():
         print("No results found.")
         sys.exit(1)
 
-    splits = ['Train', 'Val', 'Test']
-    metrics = ['Accuracy', 'Precision', 'Recall', 'F1']
+    # Metrics from the original log format
+    metric_keys = [
+        ('Test_Accuracy', 'Test Accuracy'),
+        ('Test_AUC', 'Test AUC'),
+        ('Val_AUC', 'Val AUC'),
+        ('Test_Sensitivity', 'Test Sensitivity'),
+    ]
 
     print("=" * 100)
-    print("BNT on ADNI — Results Summary (mean ± std over 5 runs)")
+    print("BNT on ADNI — Results Summary (mean ± std over runs)")
     print("=" * 100)
+
+    header = f"  {'Label':<30} {'N':>3}"
+    for _, display in metric_keys:
+        header += f"  {display:>20}"
+    print(header)
+    print(f"  {'-' * 95}")
 
     for label in sorted(results.keys()):
         runs = results[label]
-        print(f"\n  {label}  ({len(runs)} runs)")
-        print(f"  {'-' * 96}")
-
-        header = f"  {'':>10}"
-        for m in metrics:
-            header += f"  {m:>20}"
-        print(header)
-
-        for split in splits:
-            row = f"  {split:>10}"
-            for m in metrics:
-                key = f'{split}_{m}'
-                vals = [r[key] for r in runs if key in r]
-                row += f"  {fmt(vals):>20}"
-            print(row)
+        row = f"  {label:<30} {len(runs):>3}"
+        for key, _ in metric_keys:
+            vals = [r[key] for r in runs if key in r]
+            row += f"  {fmt(vals):>20}"
+        print(row)
 
     print(f"\n{'=' * 100}")
 
